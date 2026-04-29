@@ -1,5 +1,5 @@
 # BiblioManager - Installeur tout-en-un pour Windows
-# Usage : iex (irm https://raw.githubusercontent.com/sbarhabazi/BiblioManager/main/install.ps1)
+# Usage : iex (irm 'https://github.com/sbarhabazi/BiblioManager/raw/main/install.ps1')
 #
 # Ce script :
 #   1. Verifie la presence de Java 17 ou plus recent (PATH ou emplacements standards)

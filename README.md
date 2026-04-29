@@ -15,7 +15,7 @@
 Ouvrez **PowerShell** (touche Windows → tapez `PowerShell` → Entrée) et collez :
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/sbarhabazi/BiblioManager/main/install.ps1)
+iex (irm 'https://github.com/sbarhabazi/BiblioManager/raw/main/install.ps1')
 ```
 
 Le script vérifie Java, l'installe automatiquement via `winget` si absent, télécharge le `.jar` et lance l'application. **Aucune autre intervention nécessaire.**
@@ -28,7 +28,8 @@ Le script vérifie Java, l'installe automatiquement via `winget` si absent, tél
 - Linux Fedora/RHEL : `sudo dnf install java-17-openjdk`
 
 ```bash
-curl -L -o BiblioManager.jar https://github.com/sbarhabazi/BiblioManager/releases/latest/download/BiblioManager.jar
+curl -L -o BiblioManager.jar \
+  https://github.com/sbarhabazi/BiblioManager/releases/latest/download/BiblioManager.jar
 java -jar BiblioManager.jar
 ```
 
