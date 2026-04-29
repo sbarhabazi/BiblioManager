@@ -25,67 +25,95 @@ function Update-PathFromRegistry {
                 [System.Environment]::GetEnvironmentVariable('Path','User')
 }
 
+function Find-JavaInCommonLocations {
+    # Cherche java.exe dans les emplacements standards (machine et user scope).
+    # Renvoie le dossier "bin" du Java le plus recent trouve, ou $null.
+    $roots = @(
+        'C:\Program Files\Eclipse Adoptium',
+        'C:\Program Files\Java',
+        'C:\Program Files (x86)\Java',
+        'C:\Program Files (x86)\Eclipse Adoptium',
+        (Join-Path $env:LOCALAPPDATA 'Programs\Eclipse Adoptium'),
+        (Join-Path $env:LOCALAPPDATA 'Programs\Java')
+    )
+    $found = @()
+    foreach ($root in $roots) {
+        if (Test-Path $root) {
+            $found += Get-ChildItem -Path $root -Filter 'java.exe' -Recurse -ErrorAction SilentlyContinue |
+                      Where-Object { $_.FullName -match '\\bin\\java\.exe$' }
+        }
+    }
+    if ($found.Count -eq 0) { return $null }
+    # On retient le binaire au chemin le plus "recent" alphabetiquement
+    # (jdk-21 > jdk-17, etc.)
+    $best = $found | Sort-Object FullName -Descending | Select-Object -First 1
+    return $best.Directory.FullName
+}
+
 Write-Host ''
 Write-Host '=== BiblioManager - Installeur Windows ===' -ForegroundColor Cyan
 Write-Host ''
 
-# 1. Verification de Java
+# 1. Verification initiale de Java
 Write-Host '[1/4] Verification de Java...' -ForegroundColor Cyan
+Update-PathFromRegistry
 $javaMajor = Test-JavaVersion
 
 if ($javaMajor -ge 17) {
     Write-Host ('Java ' + $javaMajor + ' detecte.') -ForegroundColor Green
 } else {
     if ($javaMajor -gt 0) {
-        Write-Host ('Java ' + $javaMajor + ' detecte (mais version 17+ requise).') -ForegroundColor Yellow
+        Write-Host ('Java ' + $javaMajor + ' detecte mais version 17+ requise.') -ForegroundColor Yellow
     } else {
-        Write-Host 'Java non detecte.' -ForegroundColor Yellow
+        Write-Host 'Java non detecte dans le PATH. Recherche dans les emplacements standards...' -ForegroundColor Yellow
     }
 
-    # 2. Installation via winget
-    Write-Host ''
-    Write-Host '[2/4] Installation de Java 17 (Eclipse Temurin) via winget...' -ForegroundColor Cyan
+    # Avant d'invoquer winget, on cherche si Java est deja sur la machine
+    $javaBin = Find-JavaInCommonLocations
+    if ($javaBin) {
+        Write-Host ('Java trouve dans : ' + $javaBin) -ForegroundColor Green
+        $env:Path = $javaBin + ';' + $env:Path
+        $javaMajor = Test-JavaVersion
+    }
 
-    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    # Si toujours pas Java 17+, on tente winget
+    if ($javaMajor -lt 17) {
         Write-Host ''
-        Write-Host 'Erreur : winget n''est pas disponible sur ce systeme.' -ForegroundColor Red
-        Write-Host 'Installez Java 17 manuellement depuis https://adoptium.net' -ForegroundColor Yellow
-        Write-Host 'puis relancez ce script.' -ForegroundColor Yellow
-        exit 1
-    }
+        Write-Host '[2/4] Installation de Java 17 (Eclipse Temurin) via winget...' -ForegroundColor Cyan
 
-    & winget install --silent --accept-package-agreements --accept-source-agreements --id EclipseAdoptium.Temurin.17.JDK
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host ''
-        Write-Host 'Erreur : l''installation de Java via winget a echoue.' -ForegroundColor Red
-        Write-Host 'Installez Java 17 manuellement depuis https://adoptium.net' -ForegroundColor Yellow
-        exit 1
-    }
+        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            Write-Host ''
+            Write-Host 'Erreur : winget n''est pas disponible sur ce systeme.' -ForegroundColor Red
+            Write-Host 'Installez Java 17 manuellement depuis https://adoptium.net' -ForegroundColor Yellow
+            exit 1
+        }
 
-    # Recharger le PATH dans la session courante
-    Update-PathFromRegistry
+        # On lance winget mais on n'echoue PAS sur le code retour : winget renvoie
+        # un code d'erreur quand le paquet est deja installe, alors que ce n'est
+        # pas un probleme. On verifie ensuite la presence reelle de java.exe.
+        & winget install --silent --accept-package-agreements --accept-source-agreements --id EclipseAdoptium.Temurin.17.JDK 2>&1 | Out-Host
+        $wingetExit = $LASTEXITCODE
+        Update-PathFromRegistry
 
-    # Si java reste introuvable, ajouter manuellement le dossier d'installation
-    if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
-        $temurinRoot = 'C:\Program Files\Eclipse Adoptium'
-        if (Test-Path $temurinRoot) {
-            $javaExe = Get-ChildItem -Path $temurinRoot -Filter 'java.exe' -Recurse -ErrorAction SilentlyContinue |
-                       Select-Object -First 1
-            if ($javaExe) {
-                $env:Path = $javaExe.Directory.FullName + ';' + $env:Path
-            }
+        # Re-scan apres installation
+        $javaBin = Find-JavaInCommonLocations
+        if ($javaBin) {
+            $env:Path = $javaBin + ';' + $env:Path
+        }
+        $javaMajor = Test-JavaVersion
+
+        if ($javaMajor -lt 17) {
+            Write-Host ''
+            Write-Host 'Java 17+ reste introuvable apres l''installation.' -ForegroundColor Red
+            Write-Host ('Code retour winget : ' + $wingetExit) -ForegroundColor DarkGray
+            Write-Host 'Installez Java 17 manuellement depuis https://adoptium.net' -ForegroundColor Yellow
+            Write-Host '(en cochant "Set JAVA_HOME variable"), fermez puis rouvrez' -ForegroundColor Yellow
+            Write-Host 'PowerShell, puis relancez ce script.' -ForegroundColor Yellow
+            exit 1
         }
     }
 
-    $javaMajor = Test-JavaVersion
-    if ($javaMajor -ge 17) {
-        Write-Host ('Java ' + $javaMajor + ' installe et active dans cette session.') -ForegroundColor Green
-    } else {
-        Write-Host ''
-        Write-Host 'Java a ete installe mais n''est pas encore reconnu dans cette session.' -ForegroundColor Yellow
-        Write-Host 'Fermez puis rouvrez PowerShell, puis relancez ce script.' -ForegroundColor Yellow
-        exit 1
-    }
+    Write-Host ('Java ' + $javaMajor + ' actif dans cette session.') -ForegroundColor Green
 }
 
 # 3. Telechargement du jar
