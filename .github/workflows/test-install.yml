@@ -1,0 +1,119 @@
+name: Test installation script
+
+on:
+  push:
+    paths:
+      - 'install.ps1'
+      - '.github/workflows/test-install.yml'
+  workflow_dispatch:
+
+jobs:
+  test-windows:
+    name: Windows (PowerShell, sans Java pré-installé)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Désinstaller Java pré-existant pour simuler une machine vierge
+        shell: pwsh
+        run: |
+          # Les runners Windows GHA ont Java pré-installé. On efface JAVA_HOME et on
+          # retire java du PATH pour simuler la situation d'un utilisateur lambda.
+          Remove-Item Env:JAVA_HOME -ErrorAction SilentlyContinue
+          $env:Path = ($env:Path -split ';' | Where-Object { $_ -notmatch 'java|jdk|jre' -and $_ -ne '' }) -join ';'
+          Write-Host "java introuvable ?"
+          if (Get-Command java -ErrorAction SilentlyContinue) {
+            Write-Host "Java encore présent à : $((Get-Command java).Source)"
+          } else {
+            Write-Host "OK, java retiré du PATH."
+          }
+
+      - name: Exécuter install.ps1 (depuis le checkout local)
+        shell: pwsh
+        run: |
+          # On execute le script local plutot que via iex/irm pour eviter
+          # de dependre du push GitHub deja propage. L'effet est identique.
+          ./install.ps1
+
+      - name: Vérifier que BiblioManager.jar a été téléchargé
+        shell: pwsh
+        run: |
+          if (-not (Test-Path BiblioManager.jar)) {
+            Write-Host "ECHEC : BiblioManager.jar n'a pas été téléchargé."
+            exit 1
+          }
+          $size = (Get-Item BiblioManager.jar).Length / 1MB
+          Write-Host ("OK : BiblioManager.jar ({0:N2} Mo)" -f $size)
+
+      - name: Vérifier que la base de démo a été extraite
+        shell: pwsh
+        run: |
+          # L'app a été lancée en background. On lui laisse 5 secondes pour
+          # créer biblio.db, puis on la tue.
+          Start-Sleep -Seconds 5
+          Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          if (-not (Test-Path biblio.db)) {
+            Write-Host "ECHEC : biblio.db n'a pas été créé par l'application."
+            exit 1
+          }
+          $size = (Get-Item biblio.db).Length / 1KB
+          Write-Host ("OK : biblio.db ({0:N1} Ko) — la base de démo a été extraite." -f $size)
+
+  test-macos:
+    name: macOS (procédure curl + java -jar)
+    runs-on: macos-latest
+    steps:
+      - name: Vérifier Java 17+
+        run: |
+          java -version
+          MAJOR=$(java -version 2>&1 | head -1 | sed -E 's/.*"([0-9]+).*/\1/')
+          if [ "$MAJOR" -lt 17 ]; then echo "Java $MAJOR détecté, 17+ requis."; exit 1; fi
+          echo "Java $MAJOR OK."
+
+      - name: Télécharger le jar via curl
+        run: curl -L -o BiblioManager.jar https://github.com/sbarhabazi/BiblioManager/releases/latest/download/BiblioManager.jar
+
+      - name: Vérifier la taille du jar
+        run: |
+          test -f BiblioManager.jar || (echo "Téléchargement échoué" && exit 1)
+          ls -lh BiblioManager.jar
+
+      - name: Lancer l'app en background, vérifier biblio.db, tuer le process
+        run: |
+          java -jar BiblioManager.jar &
+          PID=$!
+          sleep 5
+          test -f biblio.db || (echo "biblio.db pas créé" && exit 1)
+          ls -lh biblio.db
+          kill $PID 2>/dev/null || true
+          echo "OK : application lancée et base de démo extraite."
+
+  test-linux:
+    name: Linux (procédure curl + java -jar, mode headless)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installer Java 17 et xvfb (display virtuel)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y openjdk-17-jdk xvfb
+
+      - name: Télécharger le jar via curl
+        run: curl -L -o BiblioManager.jar https://github.com/sbarhabazi/BiblioManager/releases/latest/download/BiblioManager.jar
+
+      - name: Lancer l'app sous xvfb, vérifier biblio.db
+        run: |
+          xvfb-run -a java -jar BiblioManager.jar &
+          PID=$!
+          sleep 8
+          test -f biblio.db || (echo "biblio.db pas créé" && exit 1)
+          ls -lh biblio.db
+          kill $PID 2>/dev/null || true
+          # Vérifier le contenu de la base de démo
+          sudo apt-get install -y sqlite3
+          NB_REFS=$(sqlite3 biblio.db "SELECT COUNT(*) FROM Reference")
+          NB_AUTEURS=$(sqlite3 biblio.db "SELECT COUNT(*) FROM Auteur")
+          echo "Base de démo : $NB_REFS références, $NB_AUTEURS auteurs"
+          test "$NB_REFS" = "4" || (echo "Mauvais nombre de références" && exit 1)
+          test "$NB_AUTEURS" = "6" || (echo "Mauvais nombre d'auteurs" && exit 1)
+          echo "OK : application fonctionnelle sous Linux."
