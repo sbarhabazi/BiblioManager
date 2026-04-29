@@ -8,29 +8,33 @@
 
 ---
 
-## Installation en 2 commandes (utilisateur final)
+## Installation (utilisateur final)
 
-**Prérequis :** Java 17 ou plus récent. Vérifier avec `java -version`.
-- macOS : `brew install --cask temurin@17` ou téléchargement depuis [https://adoptium.net](https://adoptium.net)
-- Windows : `winget install --silent EclipseAdoptium.Temurin.17.JDK` ou installateur depuis [https://adoptium.net](https://adoptium.net) (cocher « Set JAVA_HOME ») ; **redémarrer le terminal après installation**
-- Linux : `sudo apt install openjdk-17-jdk` (Debian/Ubuntu) · `sudo dnf install java-17-openjdk` (Fedora/RHEL)
+### Windows — une seule commande
 
-### macOS / Linux (Terminal)
+Ouvrez **PowerShell** (touche Windows → tapez `PowerShell` → Entrée) et collez :
+
+```powershell
+iex (irm https://raw.githubusercontent.com/sbarhabazi/BiblioManager/main/install.ps1)
+```
+
+Le script vérifie Java, l'installe automatiquement via `winget` si absent, télécharge le `.jar` et lance l'application. **Aucune autre intervention nécessaire.**
+
+### macOS / Linux — deux commandes
+
+**Prérequis :** Java 17 ou plus récent. Vérifier avec `java -version`. Si absent :
+- macOS : `brew install --cask temurin@17`
+- Linux Debian/Ubuntu : `sudo apt install openjdk-17-jdk`
+- Linux Fedora/RHEL : `sudo dnf install java-17-openjdk`
 
 ```bash
 curl -L -o BiblioManager.jar https://github.com/sbarhabazi/BiblioManager/releases/latest/download/BiblioManager.jar
 java -jar BiblioManager.jar
 ```
 
-### Windows (PowerShell ou cmd)
+### Alternative graphique (tous OS)
 
-```powershell
-curl.exe -L -o BiblioManager.jar https://github.com/sbarhabazi/BiblioManager/releases/latest/download/BiblioManager.jar
-java -jar BiblioManager.jar
-```
-
-> **Important sur Windows** : utilisez bien `curl.exe` (avec l'extension `.exe`). Sinon, PowerShell exécute son propre alias `curl` qui n'accepte pas la même syntaxe.
-> Alternative encore plus simple : téléchargez le `.jar` directement depuis [la page Release](https://github.com/sbarhabazi/BiblioManager/releases/latest) avec votre navigateur, puis double-cliquez dessus.
+Téléchargez `BiblioManager.jar` depuis [la page Release](https://github.com/sbarhabazi/BiblioManager/releases/latest), puis double-cliquez dessus. (Sous macOS, faire clic droit → *Ouvrir* la première fois.)
 
 L'application s'ouvre avec une **base de démonstration** (4 références, 6 auteurs, 7 étiquettes) déjà chargée. Aucun autre fichier à télécharger, aucune configuration.
 
