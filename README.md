@@ -10,19 +10,29 @@
 
 ## Installation en 2 commandes (utilisateur final)
 
-**Prérequis :** Java 17 ou plus récent. ([macOS](https://adoptium.net) · [Windows](https://adoptium.net) · `sudo apt install openjdk-17-jdk` sous Linux). Vérifier avec `java -version`.
+**Prérequis :** Java 17 ou plus récent. Vérifier avec `java -version`.
+- macOS : `brew install --cask temurin@17` ou téléchargement depuis [https://adoptium.net](https://adoptium.net)
+- Windows : `winget install --silent EclipseAdoptium.Temurin.17.JDK` ou installateur depuis [https://adoptium.net](https://adoptium.net) (cocher « Set JAVA_HOME ») ; **redémarrer le terminal après installation**
+- Linux : `sudo apt install openjdk-17-jdk` (Debian/Ubuntu) · `sudo dnf install java-17-openjdk` (Fedora/RHEL)
+
+### macOS / Linux (Terminal)
 
 ```bash
-# 1. Télécharger le JAR autonome (depuis la dernière Release)
 curl -L -o BiblioManager.jar https://github.com/sbarhabazi/BiblioManager/releases/latest/download/BiblioManager.jar
-
-# 2. Lancer
 java -jar BiblioManager.jar
 ```
 
-L'application s'ouvre avec une **base de démonstration** (3 références, 5 auteurs, 7 étiquettes) déjà chargée. Aucun autre fichier à télécharger, aucune configuration.
+### Windows (PowerShell ou cmd)
 
-> Sous Windows, vous pouvez aussi simplement double-cliquer sur `BiblioManager.jar`.
+```powershell
+curl.exe -L -o BiblioManager.jar https://github.com/sbarhabazi/BiblioManager/releases/latest/download/BiblioManager.jar
+java -jar BiblioManager.jar
+```
+
+> **Important sur Windows** : utilisez bien `curl.exe` (avec l'extension `.exe`). Sinon, PowerShell exécute son propre alias `curl` qui n'accepte pas la même syntaxe.
+> Alternative encore plus simple : téléchargez le `.jar` directement depuis [la page Release](https://github.com/sbarhabazi/BiblioManager/releases/latest) avec votre navigateur, puis double-cliquez dessus.
+
+L'application s'ouvre avec une **base de démonstration** (4 références, 6 auteurs, 7 étiquettes) déjà chargée. Aucun autre fichier à télécharger, aucune configuration.
 
 ---
 
