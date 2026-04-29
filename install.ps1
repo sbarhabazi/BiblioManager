@@ -11,8 +11,12 @@
 $ErrorActionPreference = 'Stop'
 
 function Test-JavaVersion {
+    # java -version ecrit sur stderr (comportement historique de la JVM).
+    # Le 2>&1 doit etre INTERIEUR aux parentheses sinon stderr est perdu.
+    $java = Get-Command java -ErrorAction SilentlyContinue
+    if (-not $java) { return 0 }
     try {
-        $output = (& java -version) 2>&1 | Out-String
+        $output = & $java.Source -version 2>&1 | Out-String
         if ($output -match 'version "?(\d+)') {
             return [int]$matches[1]
         }
