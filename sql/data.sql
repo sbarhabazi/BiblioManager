@@ -10,6 +10,7 @@ INSERT INTO Auteur (nom, prenom) VALUES ('Lavoie', 'Julie');
 INSERT INTO Auteur (nom, prenom) VALUES ('Nguyen', 'Kim');
 INSERT INTO Auteur (nom, prenom) VALUES ('Fournier', 'Pascal');
 INSERT INTO Auteur (nom, prenom) VALUES ('Okonkwo', 'Amara');
+INSERT INTO Auteur (nom, prenom) VALUES ('Ntang', 'Pierre Marie');
 
 -- Étiquettes
 INSERT INTO Etiquette (nom) VALUES ('important');
@@ -36,11 +37,18 @@ VALUES ('Notes de cours sur le patron MVC', 'Blogue personnel', 2023,
   'https://example.com/mvc-notes',
   'Notes perso sur MVC récupérées pendant la révision d''INF 1410.');
 
+INSERT INTO Reference (titre, revue, annee, hyperlien, description)
+VALUES ('Conduite de projet logiciel selon le processus RUP : retours d''expérience en formation à distance',
+  'Cahiers du génie logiciel académique', 2024,
+  'https://www.teluq.ca/',
+  'Article de référence pour le cours INF 4018 sur l''application des phases d''analyse, de conception et de réalisation à des projets étudiants.');
+
 -- Associations Reference_Auteur
 INSERT INTO Reference_Auteur VALUES (1, 1);  -- Tremblay -> Python pour les nuls
 INSERT INTO Reference_Auteur VALUES (2, 2);  -- Lavoie -> SQLite
 INSERT INTO Reference_Auteur VALUES (2, 3);  -- Nguyen -> SQLite
 INSERT INTO Reference_Auteur VALUES (3, 4);  -- Fournier -> MVC
+INSERT INTO Reference_Auteur VALUES (4, 6);  -- Ntang -> RUP en formation à distance
 
 -- Associations Reference_Etiquette
 INSERT INTO Reference_Etiquette VALUES (1, 2);  -- Python + apprentissage
@@ -50,6 +58,9 @@ INSERT INTO Reference_Etiquette VALUES (2, 1);  -- SQLite + important
 INSERT INTO Reference_Etiquette VALUES (2, 5);  -- SQLite + bases de données
 INSERT INTO Reference_Etiquette VALUES (3, 1);  -- MVC + important
 INSERT INTO Reference_Etiquette VALUES (3, 6);  -- MVC + mvc
+INSERT INTO Reference_Etiquette VALUES (4, 1);  -- RUP + important
+INSERT INTO Reference_Etiquette VALUES (4, 2);  -- RUP + apprentissage
+INSERT INTO Reference_Etiquette VALUES (4, 6);  -- RUP + mvc
 
 -- Exemple de requête de recherche par étiquette
 -- SELECT r.id_reference, r.titre, r.revue, r.annee, r.hyperlien, r.description
